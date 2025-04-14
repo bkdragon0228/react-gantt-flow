@@ -464,8 +464,10 @@ export const GanttChart = <T extends GanttChartData>({
         });
     }, [filteredTasks, expandedTasks, flattenTasks, data, searchText, searchField, columns]);
 
+    // const [initialScrollDone, setInitialScrollDone] = useState(false);
+
     useEffect(() => {
-        if (!containerRef.current) return;
+        if (!containerRef.current || isLoading) return;
 
         const container = containerRef.current;
         const containerWidth = container.clientWidth;
@@ -486,7 +488,7 @@ export const GanttChart = <T extends GanttChartData>({
             left: Math.max(0, scrollLeft),
             behavior: "smooth",
         });
-    }, [dayWidth, dates.length, getDateIndex]);
+    }, [dayWidth, dates.length, getDateIndex, isLoading]);
 
     const handleResizeStart = useCallback(
         (e: React.MouseEvent) => {

@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { GanttChart } from "../components/GanttChart";
 import { BsFillCaretDownFill, BsFillCaretRightFill } from "react-icons/bs";
 import { GanttChartContainer } from "./container/GanttChartContainer";
+import { useEffect, useState } from "react";
 
 const meta: Meta<typeof GanttChart> = {
     title: "GanttChart",
@@ -262,6 +263,28 @@ export const Loading: Story = {
         return (
             <div className="w-screen h-screen">
                 <GanttChartContainer {...rest} data={data} columns={columns} />
+            </div>
+        );
+    },
+};
+
+export const LoadingAfter: Story = {
+    args: {
+        ...Default.args,
+        isLoading: true,
+    },
+    render: (args) => {
+        const { data, columns, ...rest } = args;
+        const [isLoading, setIsLoading] = useState(true);
+
+        useEffect(() => {
+            setTimeout(() => {
+                setIsLoading(false);
+            }, 2000);
+        }, []);
+        return (
+            <div className="w-screen h-screen">
+                <GanttChartContainer {...rest} data={data} columns={columns} isLoading={isLoading} />
             </div>
         );
     },
