@@ -612,6 +612,58 @@ export const GanttChart = <T extends GanttChartData>({
         [handleScrollGanttContainer]
     );
 
+    const isTaskInVisibleRange = useCallback(
+        (row: BeFlat<T>) => {
+            const { startDate, endDate } = row;
+            const startIndex = getDateIndex(new Date(startDate));
+            const endIndex = getDateIndex(new Date(endDate));
+            if (startIndex >= visibleRange.start && endIndex <= visibleRange.end) {
+                return true;
+            }
+            return false;
+        },
+        [getDateIndex, visibleRange]
+    );
+
+    type TaskVisibilityStatus = "before" | "after" | "visible";
+
+    const getTaskVisibilityStatus = useCallback(
+        (row: BeFlat<T>): TaskVisibilityStatus => {
+            const { startDate, endDate } = row;
+            const startIndex = getDateIndex(new Date(startDate));
+            const endIndex = getDateIndex(new Date(endDate));
+
+            if (endIndex < visibleRange.start) {
+                return "before"; // Task가 현재 보이는 범위보다 이전에 있음
+            }
+            if (startIndex > visibleRange.end) {
+                return "after"; // Task가 현재 보이는 범위보다 이후에 있음
+            }
+            return "visible"; // Task가 현재 보이는 범위 안에 있음
+        },
+        [getDateIndex, visibleRange]
+    );
+    const moveToDate = useCallback(
+        (date: string | Date) => {
+            if (!containerRef.current) return;
+            const container = containerRef.current;
+            const containerWidth = container.clientWidth;
+            const dateIndex = getDateIndex(new Date(date));
+
+            const visibleDatesCount = Math.ceil(containerWidth / dayWidth); // 화면에 보여지는 날짜수
+            const startIndex = Math.max(0, dateIndex - Math.floor(visibleDatesCount / 2));
+            const endIndex = Math.min(dates.length - 1, startIndex + visibleDatesCount - 1);
+
+            setVisibleRange({ start: startIndex, end: endIndex });
+            const scrollLeft = (dateIndex - Math.floor(visibleDatesCount / 2)) * dayWidth;
+            container.scrollTo({
+                left: Math.max(0, scrollLeft),
+                behavior: "smooth",
+            });
+        },
+        [getDateIndex, visibleRange, dayWidth]
+    );
+
     return (
         <div className="flex flex-col w-full h-full">
             <div className="flex items-center justify-end gap-4 p-4 border-b">
@@ -982,7 +1034,7 @@ export const GanttChart = <T extends GanttChartData>({
                                 {/* 작업 바 */}
                                 {(() => {
                                     let currentY = 0;
-                                    return rows.map((row) => {
+                                    return rows.map((row, index) => {
                                         const element =
                                             row.type === "group" ? (
                                                 <g
@@ -1000,9 +1052,40 @@ export const GanttChart = <T extends GanttChartData>({
                                                 </g>
                                             ) : (
                                                 <g key={row.id}>
+                                                    {[getTaskVisibilityStatus(row.data!)].map((status) => {
+                                                        if (status === "visible") {
+                                                            return null;
+                                                        }
+
+                                                        const height = 30;
+                                                        const x =
+                                                            status === "after"
+                                                                ? (visibleRange.start + (BUFFER_SIZE + 1)) * dayWidth
+                                                                : (visibleRange.end - (BUFFER_SIZE + 2)) * dayWidth;
+
+                                                        const buttonText = status === "after" ? "▶" : "◀";
+
+                                                        return (
+                                                            <foreignObject
+                                                                x={x}
+                                                                y={currentY + (row.height - height) / 2}
+                                                                width={height}
+                                                                height={height}
+                                                            >
+                                                                <button
+                                                                    className="flex items-center justify-center w-full h-full bg-gray-100 rounded-full cursor-pointer"
+                                                                    onClick={() => moveToDate(row.data!.startDate)}
+                                                                >
+                                                                    {buttonText}
+                                                                </button>
+                                                            </foreignObject>
+                                                        );
+                                                    })}
+
                                                     <TaskBar
+                                                        key={row.id}
                                                         task={row.data!}
-                                                        index={0}
+                                                        index={index}
                                                         dayWidth={dayWidth}
                                                         getDateIndex={getDateIndex}
                                                         isExpanded={expandedTasks.has(row.data!.id)}
