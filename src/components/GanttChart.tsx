@@ -557,10 +557,17 @@ export const GanttChart = <T extends GanttChartData>({
             }));
         }
 
+        // groupingColumn의 field로 정렬
+        const sortedTasks = [...visibleTasks].sort((a, b) => {
+            const aValue = a[groupingColumn.field as keyof BeFlat<T>];
+            const bValue = b[groupingColumn.field as keyof BeFlat<T>];
+            return String(aValue).localeCompare(String(bValue));
+        });
+
         const result: RowType<BeFlat<T>>[] = [];
         let currentGroup: any = null;
 
-        visibleTasks.forEach((task) => {
+        sortedTasks.forEach((task) => {
             const groupValue = task[groupingColumn.field as keyof BeFlat<T>];
 
             if (groupValue !== currentGroup) {
