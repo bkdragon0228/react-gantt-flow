@@ -2,6 +2,8 @@ import { useCallback, useMemo, useState, useRef, useEffect, Fragment, use } from
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { HiChevronDown } from "react-icons/hi";
 
+import { ko, ja, es, zhCN } from "date-fns/locale";
+
 import {
     format,
     addDays,
@@ -63,7 +65,7 @@ const localeResources: Record<GanttChartLocale, GanttChartLocaleResources> = {
                 month: "yyyy",
                 week: "w 'week'",
                 day: "M/d",
-                hour: "HH:mm",
+                hour: "M/d",
             },
             subFormat: {
                 month: "M 'month'",
@@ -96,7 +98,7 @@ const localeResources: Record<GanttChartLocale, GanttChartLocaleResources> = {
                 month: "yyyy",
                 week: "w '주'",
                 day: "M/d",
-                hour: "HH:mm",
+                hour: "M/d",
             },
             subFormat: {
                 month: "M '월'",
@@ -129,7 +131,7 @@ const localeResources: Record<GanttChartLocale, GanttChartLocaleResources> = {
                 month: "yyyy",
                 week: "w '週'",
                 day: "M/d",
-                hour: "HH:mm",
+                hour: "M/d",
             },
             subFormat: {
                 month: "M '月'",
@@ -162,7 +164,7 @@ const localeResources: Record<GanttChartLocale, GanttChartLocaleResources> = {
                 month: "yyyy",
                 week: "w '週'",
                 day: "M/d",
-                hour: "HH:mm",
+                hour: "M/d",
             },
             subFormat: {
                 month: "M '月'",
@@ -837,6 +839,14 @@ export const GanttChart = <T extends GanttChartData>({
                                         const globalIndex = visibleRange.start + index;
                                         const isToday = startOfDay(date).getTime() === startOfDay(new Date()).getTime();
 
+                                        const localeMap = {
+                                            en: undefined,
+                                            ko: ko,
+                                            ja: ja,
+                                            es: es,
+                                            zh: zhCN,
+                                        };
+
                                         return (
                                             <g key={date.toString()}>
                                                 {isToday && (
@@ -857,20 +867,45 @@ export const GanttChart = <T extends GanttChartData>({
                                                     stroke="#e5e7eb"
                                                     strokeWidth={1}
                                                 />
-                                                <text
-                                                    x={globalIndex * dayWidth + 5}
-                                                    y={20}
-                                                    className={`text-xs ${isToday ? "font-bold text-blue-600" : ""}`}
+
+                                                {isToday && (
+                                                    <line
+                                                        x1={globalIndex * dayWidth + dayWidth / 2}
+                                                        y1={40}
+                                                        x2={globalIndex * dayWidth + dayWidth / 2}
+                                                        y2={rows.length * rowHeight}
+                                                        stroke="#E3F2FD"
+                                                        strokeWidth={2}
+                                                    />
+                                                )}
+
+                                                <foreignObject
+                                                    x={globalIndex * dayWidth}
+                                                    y={0}
+                                                    width={dayWidth}
+                                                    height={40}
                                                 >
-                                                    {dateFormat(date, format)}
-                                                </text>
-                                                <text
-                                                    x={globalIndex * dayWidth + 5}
-                                                    y={35}
-                                                    className={`text-xs ${isToday ? "font-bold text-blue-600" : ""}`}
-                                                >
-                                                    {dateFormat(date, subFormat)}
-                                                </text>
+                                                    <div className="flex flex-col items-center justify-center w-full h-full">
+                                                        <text
+                                                            x={globalIndex * dayWidth + 5}
+                                                            y={20}
+                                                            className={`text-xs ${
+                                                                isToday ? "font-bold text-blue-600" : ""
+                                                            }`}
+                                                        >
+                                                            {dateFormat(date, format, { locale: localeMap[locale] })}
+                                                        </text>
+                                                        <text
+                                                            x={globalIndex * dayWidth + 5}
+                                                            y={35}
+                                                            className={`text-xs ${
+                                                                isToday ? "font-bold text-blue-600" : ""
+                                                            }`}
+                                                        >
+                                                            {dateFormat(date, subFormat, { locale: localeMap[locale] })}
+                                                        </text>
+                                                    </div>
+                                                </foreignObject>
                                             </g>
                                         );
                                     })}
@@ -880,7 +915,19 @@ export const GanttChart = <T extends GanttChartData>({
                         <svg width={ganttTotalWidth} height={rows.length * rowHeight}>
                             {/* 차트 영역 */}
                             <g>
-                                {/* 수직 그리드 라인 */}
+                                {/* 수평 그리드 라인 */}
+                                {Array.from({ length: rows.length + 1 }).map((_, index) => (
+                                    <line
+                                        key={index}
+                                        x1={visibleRange.start * dayWidth}
+                                        y1={index * rowHeight}
+                                        x2={(visibleRange.end + 1) * dayWidth}
+                                        y2={index * rowHeight}
+                                        stroke="#e5e7eb"
+                                        strokeWidth={1}
+                                    />
+                                ))}
+
                                 {dates.slice(visibleRange.start, visibleRange.end + 1).map((date, index) => {
                                     const globalIndex = visibleRange.start + index;
                                     return (
@@ -974,6 +1021,26 @@ export const GanttChart = <T extends GanttChartData>({
                                         return element;
                                     });
                                 })()}
+
+                                {dates.slice(visibleRange.start, visibleRange.end + 1).map((date, index) => {
+                                    const globalIndex = visibleRange.start + index;
+                                    const isToday = startOfDay(date).getTime() === startOfDay(new Date()).getTime();
+                                    return (
+                                        <>
+                                            {isToday && viewMode === "day" && (
+                                                <line
+                                                    x1={globalIndex * dayWidth + dayWidth / 2}
+                                                    y1={0}
+                                                    x2={globalIndex * dayWidth + dayWidth / 2}
+                                                    y2={rows.length * rowHeight}
+                                                    stroke="#0095ff"
+                                                    strokeWidth={2}
+                                                    z={10000}
+                                                />
+                                            )}
+                                        </>
+                                    );
+                                })}
                             </g>
                         </svg>
                     </div>
