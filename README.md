@@ -2,7 +2,8 @@
 
 A powerful and customizable Gantt Chart component built with React, TypeScript, and Tailwind CSS.
 
-![React Gantt Chart Flow Demo](./docs/demo.gif)
+![React Gantt Chart Flow Demo](https://github.com/user-attachments/assets/0a56c9c7-6867-401a-b5e0-6e5bfda404a5)
+
 
 ## Features
 
