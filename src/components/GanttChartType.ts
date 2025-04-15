@@ -134,6 +134,7 @@ export type RowType<T> =
           id: string | number;
           data: T;
           height: number;
+          groupId?: string | number;
       }
     | {
           type: "group";

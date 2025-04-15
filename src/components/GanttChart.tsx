@@ -270,6 +270,11 @@ export const GanttChart = <T extends GanttChartData>({
         }
         return new Set();
     });
+
+    const [reducedGroups, setReducedGroups] = useState<Set<string | number>>(() => {
+        return new Set();
+    });
+
     const [gridWidth, setGridWidth] = useState(defaultGridSectionWidth);
     const [isResizing, setIsResizing] = useState(false);
     const resizeStartX = useRef<number>(0);
@@ -435,6 +440,18 @@ export const GanttChart = <T extends GanttChartData>({
         });
     }, []);
 
+    const toggleGroup = useCallback((groupId: string | number) => {
+        setReducedGroups((prev) => {
+            const next = new Set(prev);
+            if (next.has(groupId)) {
+                next.delete(groupId);
+            } else {
+                next.add(groupId);
+            }
+            return next;
+        });
+    }, []);
+
     const filteredTasks = useCallback(
         (tasks: BeFlat<T>[], searchText: string, searchField: string, columns: GanttColumn<T>[]) => {
             if (!searchText) return tasks;
@@ -560,12 +577,18 @@ export const GanttChart = <T extends GanttChartData>({
                 type: "task",
                 id: task.id,
                 height: rowHeight,
+                groupId: `group-${groupValue}`,
                 data: task as unknown as BeFlat<T>,
             });
         });
 
-        return result;
-    }, [visibleTasks, groupingColumn]);
+        return result.filter((row) => {
+            if (row.type === "task" && row.groupId) {
+                return !reducedGroups.has(row.groupId);
+            }
+            return true;
+        });
+    }, [visibleTasks, groupingColumn, rowHeight, reducedGroups]);
 
     // console.log(rows, "rows");
 
@@ -627,7 +650,7 @@ export const GanttChart = <T extends GanttChartData>({
                         value={searchText}
                         onChange={(e) => setSearchText(e.target.value)}
                         placeholder={localeResources[locale].search.placeholder}
-                        className="px-3 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="px-3 py-1 text-sm border rounded focus:outline-none"
                     />
                 </div>
                 <div className="flex items-center gap-4">
@@ -758,6 +781,7 @@ export const GanttChart = <T extends GanttChartData>({
                                         className="p-2 text-sm font-medium text-gray-700"
                                         style={{
                                             width: column.flex ? `${column.flex * 100}%` : `${width}px`,
+                                            height: 40,
                                             minWidth: column.minWidth,
                                             textAlign: align,
                                         }}
@@ -771,6 +795,7 @@ export const GanttChart = <T extends GanttChartData>({
                         <div ref={gridRef} className="flex-1 overflow-y-auto scrollbar-hide" onScroll={handleScroll}>
                             {rows.map((row) => {
                                 if (row.type === "group") {
+                                    const isReduced = reducedGroups.has(row.id);
                                     return (
                                         <div
                                             key={row.id}
@@ -779,8 +804,19 @@ export const GanttChart = <T extends GanttChartData>({
                                             onClick={() => onGroupClick?.(row.id, row)}
                                             onDoubleClick={() => onGroupDoubleClick?.(row.id, row)}
                                         >
-                                            {groupingColumn!.headerGetter?.(row.groupValue, { row: row }) ||
-                                                row.groupValue}
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    className="cursor-pointer"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleGroup(row.id);
+                                                    }}
+                                                >
+                                                    {isReduced ? "▶" : "▼"}
+                                                </button>
+                                                {groupingColumn!.headerGetter?.(row.groupValue, { row: row }) ||
+                                                    row.groupValue}
+                                            </div>
                                         </div>
                                     );
                                 }
@@ -942,19 +978,6 @@ export const GanttChart = <T extends GanttChartData>({
                                         />
                                     );
                                 })}
-
-                                {/* 수평 그리드 라인 */}
-                                {Array.from({ length: rows.length + 1 }).map((_, index) => (
-                                    <line
-                                        key={index}
-                                        x1={visibleRange.start * dayWidth}
-                                        y1={index * rowHeight}
-                                        x2={(visibleRange.end + 1) * dayWidth}
-                                        y2={index * rowHeight}
-                                        stroke="#e5e7eb"
-                                        strokeWidth={1}
-                                    />
-                                ))}
 
                                 {/* 작업 바 */}
                                 {(() => {
@@ -1422,11 +1445,13 @@ const RowTaskCell = <T extends GanttChartData>({ row, rowIndex, column, onUpdate
 
     return (
         <div
-            className="p-2 text-sm text-gray-900"
+            className="h-full p-2 text-sm text-gray-900"
             style={{
                 width: column.flex ? `${column.flex * 100}%` : `${width}px`,
                 minWidth: column.minWidth,
-                textAlign: align,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: align,
             }}
         >
             {column.renderCell ? (
