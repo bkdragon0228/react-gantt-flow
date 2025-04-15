@@ -1,6 +1,8 @@
-# React Gantt Chart Component
+# React Gantt Chart Flow
 
 A powerful and customizable Gantt Chart component built with React, TypeScript, and Tailwind CSS.
+
+![React Gantt Chart Flow Demo](./docs/demo.gif)
 
 ## Features
 
@@ -16,7 +18,6 @@ A powerful and customizable Gantt Chart component built with React, TypeScript, 
 
 ## Planned Features
 
--   **Group Toggle**: Expand/collapse functionality for grouped tasks
 -   **Column Editing**: Inline editing capabilities for task columns
 
 ## Installation
@@ -36,28 +37,102 @@ const MyGanttChart = () => {
     const data = [
         {
             id: 1,
+            projectId: "1-project",
             title: "Task 1",
-            startDate: "2024-01-01",
-            endDate: "2024-01-05",
+            startDate: new Date("2025-04-01T00:00:00"),
+            endDate: new Date("2025-04-05T23:59:59"),
+            status: "진행중",
             children: [
                 {
-                    id: 2,
-                    title: "Subtask 1",
-                    startDate: "2024-01-01",
-                    endDate: "2024-01-03",
+                    id: 11,
+                    projectId: "1-project",
+                    title: "Sub Task 1",
+                    startDate: new Date("2025-04-06T00:00:00"),
+                    endDate: new Date("2025-04-07T23:59:59"),
+                    status: "진행중",
                 },
             ],
         },
     ];
 
     const columns = [
-        { field: "title", headerName: "Task Name", width: 200 },
-        { field: "startDate", headerName: "Start Date", width: 150 },
-        { field: "endDate", headerName: "End Date", width: 150 },
+        {
+            field: "title",
+            headerName: "Task Name",
+            flex: 1,
+        },
+        {
+            field: "status",
+            headerName: "Status",
+            width: 200,
+            align: "center",
+        },
+        {
+            field: "startDate",
+            headerName: "Start Date",
+            width: 300,
+            align: "center",
+            editable: true,
+            type: "datetime",
+            valueGetter: (row) => row.startDate.toISOString(),
+        },
+        {
+            field: "endDate",
+            headerName: "End Date",
+            width: 300,
+            align: "center",
+            valueGetter: (row) => row.endDate.toISOString(),
+            editable: true,
+        },
     ];
 
-    return <GanttChart data={data} columns={columns} viewMode="day" defaultGridSectionWidth={500} />;
+    return (
+        <GanttChart
+            data={data}
+            columns={columns}
+            viewMode="day"
+            defaultGridSectionWidth={597}
+            defaultExpanded
+            onTaskClick={(taskId, task) => console.log("Task clicked:", taskId, task)}
+            onTaskDoubleClick={(taskId, task) => console.log("Task double clicked:", taskId, task)}
+            onDataUpdate={(newData, oldData) => console.log("Data updated:", newData, oldData)}
+        />
+    );
 };
+```
+
+## Advanced Usage
+
+### Grouping Tasks
+
+```tsx
+<GanttChart
+    {...props}
+    groupingColumn={{
+        field: "projectId",
+    }}
+/>
+```
+
+### Localization
+
+```tsx
+<GanttChart
+    {...props}
+    locale="ko" // Supports "en", "ko", "ja", "zh", "es"
+/>
+```
+
+### Custom Row Height
+
+```tsx
+<GanttChart {...props} rowHeight={100} taskBarHeight={80} />
+```
+
+### Loading State
+
+```tsx
+<GanttChart {...props} isLoading={true} />
 ```
 
 ## Props
