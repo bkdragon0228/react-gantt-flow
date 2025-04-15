@@ -289,3 +289,19 @@ export const LoadingAfter: Story = {
         );
     },
 };
+
+export const RowHeight: Story = {
+    args: {
+        ...Default.args,
+        rowHeight: 100,
+        taskBarHeight: 80,
+    },
+    render: (args) => {
+        const { data, columns, ...rest } = args;
+        return (
+            <div className="w-screen h-screen">
+                <GanttChartContainer {...rest} data={data} columns={columns} />
+            </div>
+        );
+    },
+};

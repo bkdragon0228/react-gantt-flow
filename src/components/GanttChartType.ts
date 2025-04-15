@@ -93,6 +93,8 @@ export interface GanttChartProps<T extends GanttChartData>
         GanntChartDataProps<T>,
         GanttChartColumnProps<T> {
     viewMode?: GanttChartViewMode;
+    rowHeight?: number;
+    taskBarHeight?: number;
     defaultGridSectionWidth?: number;
     defaultExpanded?: boolean;
     locale?: GanttChartLocale;

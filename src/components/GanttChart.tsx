@@ -236,6 +236,8 @@ export const GanttChart = <T extends GanttChartData>({
     defaultGridSectionWidth = 500,
     defaultExpanded = false,
     locale = "en",
+    rowHeight = 50,
+    taskBarHeight = 30,
 }: GanttChartProps<T>) => {
     const [data, setData] = useState<T[]>(defaultData);
 
@@ -531,7 +533,7 @@ export const GanttChart = <T extends GanttChartData>({
             return visibleTasks.map((task) => ({
                 type: "task" as const,
                 id: task.id,
-                height: 50,
+                height: rowHeight,
                 data: task as unknown as BeFlat<T>,
             }));
         }
@@ -546,7 +548,7 @@ export const GanttChart = <T extends GanttChartData>({
                 result.push({
                     type: "group",
                     id: `group-${groupValue}`,
-                    height: 50, // 그룹 헤더도 50px로 통일
+                    height: rowHeight,
                     groupValue,
                 });
                 currentGroup = groupValue;
@@ -555,7 +557,7 @@ export const GanttChart = <T extends GanttChartData>({
             result.push({
                 type: "task",
                 id: task.id,
-                height: 50,
+                height: rowHeight,
                 data: task as unknown as BeFlat<T>,
             });
         });
@@ -875,7 +877,7 @@ export const GanttChart = <T extends GanttChartData>({
                                 </g>
                             </svg>
                         </div>
-                        <svg width={ganttTotalWidth} height={rows.length * 50}>
+                        <svg width={ganttTotalWidth} height={rows.length * rowHeight}>
                             {/* 차트 영역 */}
                             <g>
                                 {/* 수직 그리드 라인 */}
@@ -899,9 +901,9 @@ export const GanttChart = <T extends GanttChartData>({
                                     <line
                                         key={index}
                                         x1={visibleRange.start * dayWidth}
-                                        y1={index * 50}
+                                        y1={index * rowHeight}
                                         x2={(visibleRange.end + 1) * dayWidth}
-                                        y2={index * 50}
+                                        y2={index * rowHeight}
                                         stroke="#e5e7eb"
                                         strokeWidth={1}
                                     />
@@ -963,7 +965,8 @@ export const GanttChart = <T extends GanttChartData>({
                                                         onTaskClick={onTaskClick}
                                                         onTaskDoubleClick={onTaskDoubleClick}
                                                         onDataUpdate={onDataUpdate}
-                                                        y={currentY + 10} // TODO : 고쳐야함.
+                                                        y={currentY + (row.height - taskBarHeight) / 2}
+                                                        height={taskBarHeight}
                                                     />
                                                 </g>
                                             );
@@ -993,6 +996,7 @@ interface TaskBarProps<T> {
     onTaskDoubleClick?: (taskId: string | number, task: BeFlat<T>) => void;
     onDataUpdate?: (newData: T, oldData: T) => void;
     y: number;
+    height?: number;
 }
 
 const TaskBar = <T extends GanttChartData>({
@@ -1007,6 +1011,7 @@ const TaskBar = <T extends GanttChartData>({
     onTaskDoubleClick,
     onDataUpdate,
     y,
+    height = 30,
 }: TaskBarProps<T>) => {
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState<"start" | "end" | null>(null);
@@ -1075,7 +1080,6 @@ const TaskBar = <T extends GanttChartData>({
 
     const x = startIndex * dayWidth + startRatio * dayWidth;
     const width = (endIndex - startIndex) * dayWidth + (endRatio - startRatio) * dayWidth;
-    const height = 30;
 
     const handleMouseEnter = useCallback(() => {
         setIsHovered(true);
