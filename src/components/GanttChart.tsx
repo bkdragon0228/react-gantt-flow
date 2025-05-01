@@ -628,26 +628,17 @@ export const GanttChart = <T extends GanttChartData>({
         [handleScrollGanttContainer]
     );
 
-    const isTaskInVisibleRange = useCallback(
-        (row: BeFlat<T>) => {
-            const { startDate, endDate } = row;
-            const startIndex = getDateIndex(new Date(startDate));
-            const endIndex = getDateIndex(new Date(endDate));
-            if (startIndex >= visibleRange.start && endIndex <= visibleRange.end) {
-                return true;
-            }
-            return false;
-        },
-        [getDateIndex, visibleRange]
-    );
-
     type TaskVisibilityStatus = "before" | "after" | "visible";
 
     const getTaskVisibilityStatus = useCallback(
         (row: BeFlat<T>): TaskVisibilityStatus => {
             const { startDate, endDate } = row;
             const startIndex = getDateIndex(new Date(startDate));
-            const endIndex = getDateIndex(new Date(endDate));
+            let endIndex = getDateIndex(new Date(endDate));
+
+            if (new Date(endDate).getFullYear() > selectedYear) {
+                endIndex = dates.length;
+            }
 
             if (endIndex < visibleRange.start) {
                 return "before"; // Task가 현재 보이는 범위보다 이전에 있음
@@ -657,7 +648,7 @@ export const GanttChart = <T extends GanttChartData>({
             }
             return "visible"; // Task가 현재 보이는 범위 안에 있음
         },
-        [getDateIndex, visibleRange]
+        [getDateIndex, visibleRange, selectedYear, dates]
     );
     const moveToDate = useCallback(
         (date: string | Date) => {
@@ -1101,6 +1092,8 @@ export const GanttChart = <T extends GanttChartData>({
                                                     <TaskBar
                                                         key={row.id}
                                                         task={row.data!}
+                                                        dates={dates}
+                                                        currentYear={selectedYear}
                                                         index={index}
                                                         dayWidth={dayWidth}
                                                         getDateIndex={getDateIndex}
@@ -1174,6 +1167,8 @@ export const GanttChart = <T extends GanttChartData>({
 
 interface TaskBarProps<T> {
     task: BeFlat<T>;
+    dates: Date[];
+    currentYear: number;
     index: number;
     dayWidth: number;
     getDateIndex: (date: Date) => number;
@@ -1190,6 +1185,8 @@ interface TaskBarProps<T> {
 
 const TaskBar = <T extends GanttChartData>({
     task,
+    dates,
+    currentYear,
     dayWidth,
     getDateIndex,
     isExpanded,
@@ -1262,7 +1259,11 @@ const TaskBar = <T extends GanttChartData>({
     const endDate = new Date(task.endDate);
 
     const startIndex = getDateIndex(startDate);
-    const endIndex = getDateIndex(endDate);
+    let endIndex = getDateIndex(endDate);
+
+    if (endDate.getFullYear() > currentYear) {
+        endIndex = dates.length;
+    }
 
     const startRatio = getTimeRatio(startDate);
     const endRatio = getTimeRatio(endDate);

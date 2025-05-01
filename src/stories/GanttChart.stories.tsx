@@ -305,3 +305,26 @@ export const RowHeight: Story = {
         );
     },
 };
+
+export const BeyondTheYear: Story = {
+    args: {
+        ...Default.args,
+        data: [
+            {
+                id: 1,
+                title: "Task 1",
+                startDate: new Date("2025-12-30T00:00:01"),
+                endDate: new Date("2026-01-02T23:59:59"),
+                status: "진행중",
+            },
+        ],
+    },
+    render: (args) => {
+        const { data, columns, ...rest } = args;
+        return (
+            <div className="w-screen h-screen">
+                <GanttChartContainer {...rest} data={data} columns={columns} />
+            </div>
+        );
+    },
+};
