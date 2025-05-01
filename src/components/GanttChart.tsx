@@ -468,9 +468,18 @@ export const GanttChart = <T extends GanttChartData>({
         []
     );
 
+    const filteredTasksByYear = useCallback((tasks: BeFlat<T>[], year: number) => {
+        return tasks.filter((task) => {
+            const startYear = new Date(task.startDate).getFullYear();
+            const endYear = new Date(task.endDate).getFullYear();
+            return startYear === year || endYear === year || (startYear < year && endYear > year);
+        });
+    }, []);
+
     const visibleTasks = useMemo(() => {
         const flattened = flattenTasks(data);
-        const filtered = filteredTasks(flattened, searchText, searchField, columns);
+        const filteredFirst = filteredTasks(flattened, searchText, searchField, columns);
+        const filtered = filteredTasksByYear(filteredFirst, selectedYear);
 
         const isAllParentsExpanded = (task: BeFlat<T>): boolean => {
             if (!task.parentId) return true;
@@ -483,7 +492,7 @@ export const GanttChart = <T extends GanttChartData>({
         return filtered.filter((task) => {
             return isAllParentsExpanded(task);
         });
-    }, [filteredTasks, expandedTasks, flattenTasks, data, searchText, searchField, columns]);
+    }, [filteredTasks, expandedTasks, flattenTasks, data, searchText, searchField, columns, selectedYear]);
 
     // const [initialScrollDone, setInitialScrollDone] = useState(false);
 
