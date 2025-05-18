@@ -1037,7 +1037,6 @@ export const GanttChart = <T extends GanttChartData>({
                             </svg>
                         </div>
                         <svg width={ganttTotalWidth} height={rows.length * rowHeight}>
-                            {/* 차트 영역 */}
                             <g>
                                 {/* 수평 그리드 라인 */}
                                 {Array.from({ length: rows.length + 1 }).map((_, index) => (
@@ -1069,101 +1068,106 @@ export const GanttChart = <T extends GanttChartData>({
 
                                 {/* 작업 바 */}
                                 {(() => {
-                                    let currentY = 0;
-                                    return rows.map((row, index) => {
-                                        const element =
-                                            row.type === "group" ? (
-                                                <g
-                                                    key={row.id}
-                                                    onClick={() => onGroupClick?.(row.id, row)}
-                                                    onDoubleClick={() => onGroupDoubleClick?.(row.id, row)}
-                                                >
-                                                    <rect
-                                                        x={visibleRange.start * dayWidth}
-                                                        y={currentY}
-                                                        width={(visibleRange.end - visibleRange.start + 1) * dayWidth}
-                                                        height={row.height}
-                                                        fill="#f3f4f6"
-                                                    />
-                                                </g>
-                                            ) : (
-                                                <g key={row.id}>
-                                                    {[getTaskVisibilityStatus(row.data!)].map((status) => {
-                                                        if (status === "visible") {
-                                                            return null;
-                                                        }
-
-                                                        const height = 30;
-                                                        const x =
-                                                            status === "after"
-                                                                ? (visibleRange.start + (BUFFER_SIZE + 1)) * dayWidth
-                                                                : (visibleRange.end - (BUFFER_SIZE + 2)) * dayWidth;
-
-                                                        const buttonText = status === "after" ? "▶" : "◀";
-
-                                                        return (
-                                                            <foreignObject
-                                                                x={x}
-                                                                y={currentY + (row.height - height) / 2}
-                                                                width={height}
-                                                                height={height}
-                                                            >
-                                                                <button
-                                                                    className="flex items-center justify-center w-full h-full bg-gray-100 rounded-full cursor-pointer"
-                                                                    onClick={() => moveToDate(row.data!.startDate)}
-                                                                >
-                                                                    {buttonText}
-                                                                </button>
-                                                            </foreignObject>
-                                                        );
-                                                    })}
-
-                                                    <TaskBar
+                                    let currentY = visibleRowRange.start * rowHeight;
+                                    return rows
+                                        .slice(visibleRowRange.start, visibleRowRange.end + 1)
+                                        .map((row, index) => {
+                                            const element =
+                                                row.type === "group" ? (
+                                                    <g
                                                         key={row.id}
-                                                        task={row.data!}
-                                                        dates={dates}
-                                                        currentYear={selectedYear}
-                                                        index={index}
-                                                        dayWidth={dayWidth}
-                                                        getDateIndex={getDateIndex}
-                                                        isExpanded={expandedTasks.has(row.data!.id)}
-                                                        onToggle={() => toggleTask(row.data!.id)}
-                                                        viewMode={viewMode}
-                                                        onTaskUpdate={(taskId, newStartDate, newEndDate) => {
-                                                            const updateTaskInTree = (tasks: T[]): T[] => {
-                                                                return tasks.map((task) => {
-                                                                    if (task.id === taskId) {
-                                                                        const newData = {
-                                                                            ...task,
-                                                                            startDate: newStartDate,
-                                                                            endDate: newEndDate,
-                                                                        };
-                                                                        return newData;
-                                                                    }
-                                                                    if (task.children) {
-                                                                        return {
-                                                                            ...task,
-                                                                            children: updateTaskInTree(
-                                                                                task.children as T[]
-                                                                            ),
-                                                                        };
-                                                                    }
-                                                                    return task;
-                                                                });
-                                                            };
-                                                            setData((prev) => updateTaskInTree(prev));
-                                                        }}
-                                                        onTaskClick={onTaskClick}
-                                                        onTaskDoubleClick={onTaskDoubleClick}
-                                                        onDataUpdate={onDataUpdate}
-                                                        y={currentY + (row.height - taskBarHeight) / 2}
-                                                        height={taskBarHeight}
-                                                    />
-                                                </g>
-                                            );
-                                        currentY += row.height;
-                                        return element;
-                                    });
+                                                        onClick={() => onGroupClick?.(row.id, row)}
+                                                        onDoubleClick={() => onGroupDoubleClick?.(row.id, row)}
+                                                    >
+                                                        <rect
+                                                            x={visibleRange.start * dayWidth}
+                                                            y={currentY}
+                                                            width={
+                                                                (visibleRange.end - visibleRange.start + 1) * dayWidth
+                                                            }
+                                                            height={row.height}
+                                                            fill="#f3f4f6"
+                                                        />
+                                                    </g>
+                                                ) : (
+                                                    <g key={row.id}>
+                                                        {[getTaskVisibilityStatus(row.data!)].map((status) => {
+                                                            if (status === "visible") {
+                                                                return null;
+                                                            }
+
+                                                            const height = 30;
+                                                            const x =
+                                                                status === "after"
+                                                                    ? (visibleRange.start + (BUFFER_SIZE + 1)) *
+                                                                      dayWidth
+                                                                    : (visibleRange.end - (BUFFER_SIZE + 2)) * dayWidth;
+
+                                                            const buttonText = status === "after" ? "▶" : "◀";
+
+                                                            return (
+                                                                <foreignObject
+                                                                    x={x}
+                                                                    y={currentY + (row.height - height) / 2}
+                                                                    width={height}
+                                                                    height={height}
+                                                                >
+                                                                    <button
+                                                                        className="flex items-center justify-center w-full h-full bg-gray-100 rounded-full cursor-pointer"
+                                                                        onClick={() => moveToDate(row.data!.startDate)}
+                                                                    >
+                                                                        {buttonText}
+                                                                    </button>
+                                                                </foreignObject>
+                                                            );
+                                                        })}
+
+                                                        <TaskBar
+                                                            key={row.id}
+                                                            task={row.data!}
+                                                            dates={dates}
+                                                            currentYear={selectedYear}
+                                                            index={index}
+                                                            dayWidth={dayWidth}
+                                                            getDateIndex={getDateIndex}
+                                                            isExpanded={expandedTasks.has(row.data!.id)}
+                                                            onToggle={() => toggleTask(row.data!.id)}
+                                                            viewMode={viewMode}
+                                                            onTaskUpdate={(taskId, newStartDate, newEndDate) => {
+                                                                const updateTaskInTree = (tasks: T[]): T[] => {
+                                                                    return tasks.map((task) => {
+                                                                        if (task.id === taskId) {
+                                                                            const newData = {
+                                                                                ...task,
+                                                                                startDate: newStartDate,
+                                                                                endDate: newEndDate,
+                                                                            };
+                                                                            return newData;
+                                                                        }
+                                                                        if (task.children) {
+                                                                            return {
+                                                                                ...task,
+                                                                                children: updateTaskInTree(
+                                                                                    task.children as T[]
+                                                                                ),
+                                                                            };
+                                                                        }
+                                                                        return task;
+                                                                    });
+                                                                };
+                                                                setData((prev) => updateTaskInTree(prev));
+                                                            }}
+                                                            onTaskClick={onTaskClick}
+                                                            onTaskDoubleClick={onTaskDoubleClick}
+                                                            onDataUpdate={onDataUpdate}
+                                                            y={currentY + (row.height - taskBarHeight) / 2}
+                                                            height={taskBarHeight}
+                                                        />
+                                                    </g>
+                                                );
+                                            currentY += row.height;
+                                            return element;
+                                        });
                                 })()}
 
                                 {dates.slice(visibleRange.start, visibleRange.end + 1).map((date, index) => {
