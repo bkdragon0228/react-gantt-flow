@@ -328,3 +328,34 @@ export const BeyondTheYear: Story = {
         );
     },
 };
+
+function generateDummyTasks(count: number): any[] {
+    const tasks: any[] = [];
+    const baseDate = new Date();
+    for (let i = 0; i < count; i++) {
+        tasks.push({
+            id: i + 1,
+            projectId: `${Math.floor(i / 10) + 1}-project`,
+            title: `Task ${i + 1}`,
+            startDate: new Date(baseDate.getTime() + i * 24 * 60 * 60 * 1000),
+            endDate: new Date(baseDate.getTime() + (i + 2) * 24 * 60 * 60 * 1000),
+            status: i % 3 === 0 ? "완료" : "진행중",
+        });
+    }
+    return tasks;
+}
+
+export const ThousandRows: Story = {
+    args: {
+        ...Default.args,
+        data: generateDummyTasks(1000),
+    },
+    render: (args) => {
+        const { data, columns, ...rest } = args;
+        return (
+            <div className="w-screen h-screen">
+                <GanttChartContainer {...rest} data={data} columns={columns} />
+            </div>
+        );
+    },
+};

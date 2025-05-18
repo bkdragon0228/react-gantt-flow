@@ -254,6 +254,8 @@ export const GanttChart = <T extends GanttChartData>({
     const containerRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<HTMLDivElement>(null);
     const [visibleRange, setVisibleRange] = useState({ start: 0, end: 0 });
+    const [visibleRowRange, setVisibleRowRange] = useState({ start: 0, end: 0 });
+
     const [expandedTasks, setExpandedTasks] = useState<Set<string | number>>(() => {
         if (defaultExpanded) {
             const allTaskIds = new Set<string | number>();
@@ -606,6 +608,22 @@ export const GanttChart = <T extends GanttChartData>({
         });
     }, [visibleTasks, groupingColumn, rowHeight, reducedGroups]);
 
+    const handleScrollRows = useCallback(() => {
+        if (!gridRef.current) return;
+
+        const scrollTop = gridRef.current.scrollTop;
+        const containerHeight = gridRef.current.clientHeight;
+        const maxRowCount = Math.ceil(containerHeight / rowHeight);
+
+        const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - BUFFER_SIZE);
+        const endIndex = Math.min(rows.length - 1, startIndex + maxRowCount + BUFFER_SIZE);
+        setVisibleRowRange({ start: startIndex, end: endIndex });
+    }, [rowHeight, rows.length]);
+
+    useEffect(() => {
+        handleScrollRows();
+    }, [rows.length, rowHeight]);
+
     // console.log(rows, "rows");
 
     const handleScroll = useCallback(
@@ -851,8 +869,17 @@ export const GanttChart = <T extends GanttChartData>({
                             })}
                         </div>
 
-                        <div ref={gridRef} className="flex-1 overflow-y-auto scrollbar-hide" onScroll={handleScroll}>
-                            {rows.map((row) => {
+                        <div
+                            ref={gridRef}
+                            className="flex-1 overflow-y-auto scrollbar-hide"
+                            onScroll={(e) => {
+                                handleScroll(e);
+                                handleScrollRows();
+                            }}
+                        >
+                            {/* 위쪽 패딩 */}
+                            <div style={{ height: visibleRowRange.start * rowHeight }} />
+                            {rows.slice(visibleRowRange.start, visibleRowRange.end + 1).map((row) => {
                                 if (row.type === "group") {
                                     const isReduced = reducedGroups.has(row.id);
                                     return (
@@ -908,6 +935,8 @@ export const GanttChart = <T extends GanttChartData>({
                                     </div>
                                 );
                             })}
+                            {/* 아래쪽 패딩 */}
+                            <div style={{ height: (rows.length - visibleRowRange.end - 1) * rowHeight }} />
                         </div>
 
                         {/* Resize handle */}
