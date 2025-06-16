@@ -200,7 +200,7 @@ export const Default: Story = {
         const { data, columns, ...rest } = args;
         return (
             <div className="w-screen h-screen">
-                <GanttChartContainer {...rest} data={data} columns={columns} />
+                <GanttChartContainer {...rest} data={data} columns={columns} draggable={true} />
             </div>
         );
     },

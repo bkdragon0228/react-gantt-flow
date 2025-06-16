@@ -98,6 +98,7 @@ export interface GanttChartProps<T extends GanttChartData>
     defaultGridSectionWidth?: number;
     defaultExpanded?: boolean;
     locale?: GanttChartLocale;
+    draggable?: boolean;
 }
 
 export interface GanttChartHandler<T extends GanttChartData> {
