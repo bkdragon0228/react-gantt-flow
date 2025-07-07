@@ -697,7 +697,13 @@ export const GanttChart = <T extends GanttChartData>({
         [getDateIndex, visibleRange, dayWidth]
     );
 
+    /**
+     * 타임라인 드래그 시작 핸들러
+     * @param {React.MouseEvent} e - 마우스 이벤트 객체
+     */
     const handleDragScrollStart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
         // TaskBar 드래그 중이면 타임라인 드래그 금지
         if (isTaskBarDragging) return;
         if (e.button !== 0) return;
@@ -706,23 +712,39 @@ export const GanttChart = <T extends GanttChartData>({
         scrollStartLeft.current = containerRef.current?.scrollLeft ?? 0;
     };
 
+    /**
+     * 타임라인 드래그 중 이동 핸들러
+     * @param {MouseEvent} e - 마우스 이벤트 객체
+    */
     const handleDragScrollMove = useCallback((e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
         if (!isDragScrolling || !containerRef.current) return;
         const dx = e.clientX - dragStartX.current;
         containerRef.current.scrollLeft = scrollStartLeft.current - dx;
     }, [isDragScrolling]);
 
-    const handleDragScrollEnd = useCallback(() => {
+    /**
+     * 타임라인 드래그 종료 핸들러
+     * @param {MouseEvent} e - 마우스 이벤트 객체
+     */
+    const handleDragScrollEnd = useCallback((e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
         setIsDragScrolling(false);
     }, []);
 
+    /**
+     * 타임라인 드래그 이벤트 리스너 등록
+     */
     useEffect(() => {
-        if (isDragScrolling) {
-            window.addEventListener("mousemove", handleDragScrollMove);
-            window.addEventListener("mouseup", handleDragScrollEnd);
+        if (isDragScrolling && containerRef.current) {
+            const container = containerRef.current;
+            container.addEventListener("mousemove", handleDragScrollMove);
+            container.addEventListener("mouseup", handleDragScrollEnd);
             return () => {
-                window.removeEventListener("mousemove", handleDragScrollMove);
-                window.removeEventListener("mouseup", handleDragScrollEnd);
+                container.removeEventListener("mousemove", handleDragScrollMove);
+                container.removeEventListener("mouseup", handleDragScrollEnd);
             };
         }
     }, [isDragScrolling, handleDragScrollMove, handleDragScrollEnd]);
