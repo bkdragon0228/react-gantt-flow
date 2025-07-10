@@ -240,6 +240,7 @@ export const GanttChart = <T extends GanttChartData>({
     locale = "en",
     rowHeight = 50,
     taskBarHeight = 30,
+    draggable = false,
 }: GanttChartProps<T>) => {
     const [data, setData] = useState<T[]>(defaultData);
 
@@ -283,6 +284,12 @@ export const GanttChart = <T extends GanttChartData>({
     const resizeStartWidth = useRef<number>(0);
 
     const [isInitialized, setIsInitialized] = useState(false);
+
+    const [isDragScrolling, setIsDragScrolling] = useState(false);
+    const dragStartX = useRef(0);
+    const scrollStartLeft = useRef(0);
+
+    const [isTaskBarDragging, setIsTaskBarDragging] = useState(false);
 
     const initialExpanded = useCallback(() => {
         if (defaultExpanded) {
@@ -628,6 +635,7 @@ export const GanttChart = <T extends GanttChartData>({
 
     const handleScroll = useCallback(
         (event: React.UIEvent<HTMLDivElement>) => {
+            if (isTaskBarDragging) return;
             const target = event.currentTarget;
             const scrollTop = target.scrollTop;
 
@@ -643,7 +651,7 @@ export const GanttChart = <T extends GanttChartData>({
                 handleScrollGanttContainer();
             }
         },
-        [handleScrollGanttContainer]
+        [handleScrollGanttContainer, isTaskBarDragging]
     );
 
     type TaskVisibilityStatus = "before" | "after" | "visible";
@@ -688,6 +696,58 @@ export const GanttChart = <T extends GanttChartData>({
         },
         [getDateIndex, visibleRange, dayWidth]
     );
+
+    /**
+     * 타임라인 드래그 시작 핸들러
+     * @param {React.MouseEvent} e - 마우스 이벤트 객체
+     */
+    const handleDragScrollStart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // TaskBar 드래그 중이면 타임라인 드래그 금지
+        if (isTaskBarDragging) return;
+        if (e.button !== 0) return;
+        setIsDragScrolling(true);
+        dragStartX.current = e.clientX;
+        scrollStartLeft.current = containerRef.current?.scrollLeft ?? 0;
+    };
+
+    /**
+     * 타임라인 드래그 중 이동 핸들러
+     * @param {MouseEvent} e - 마우스 이벤트 객체
+    */
+    const handleDragScrollMove = useCallback((e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!isDragScrolling || !containerRef.current) return;
+        const dx = e.clientX - dragStartX.current;
+        containerRef.current.scrollLeft = scrollStartLeft.current - dx;
+    }, [isDragScrolling]);
+
+    /**
+     * 타임라인 드래그 종료 핸들러
+     * @param {MouseEvent} e - 마우스 이벤트 객체
+     */
+    const handleDragScrollEnd = useCallback((e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragScrolling(false);
+    }, []);
+
+    /**
+     * 타임라인 드래그 이벤트 리스너 등록
+     */
+    useEffect(() => {
+        if (isDragScrolling && containerRef.current) {
+            const container = containerRef.current;
+            container.addEventListener("mousemove", handleDragScrollMove);
+            container.addEventListener("mouseup", handleDragScrollEnd);
+            return () => {
+                container.removeEventListener("mousemove", handleDragScrollMove);
+                container.removeEventListener("mouseup", handleDragScrollEnd);
+            };
+        }
+    }, [isDragScrolling, handleDragScrollMove, handleDragScrollEnd]);
 
     return (
         <div className="flex flex-col w-full h-full">
@@ -951,8 +1011,9 @@ export const GanttChart = <T extends GanttChartData>({
 
                     <div
                         ref={containerRef}
-                        className="relative flex-1 overflow-auto scrollbar-hide"
+                        className={`relative flex-1 overflow-auto scrollbar-hide ${draggable ? (isDragScrolling ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
                         onScroll={handleScroll}
+                        onMouseDown={draggable ? handleDragScrollStart : undefined}
                     >
                         <div className="sticky top-0 z-10 bg-white">
                             <svg width={ganttTotalWidth} height={40}>
@@ -1162,6 +1223,7 @@ export const GanttChart = <T extends GanttChartData>({
                                                             onDataUpdate={onDataUpdate}
                                                             y={currentY + (row.height - taskBarHeight) / 2}
                                                             height={taskBarHeight}
+                                                            setIsTaskBarDragging={setIsTaskBarDragging}
                                                         />
                                                     </g>
                                                 );
@@ -1214,6 +1276,7 @@ interface TaskBarProps<T> {
     onDataUpdate?: (newData: T, oldData: T) => void;
     y: number;
     height?: number;
+    setIsTaskBarDragging?: (dragging: boolean) => void;
 }
 
 const TaskBar = <T extends GanttChartData>({
@@ -1231,6 +1294,7 @@ const TaskBar = <T extends GanttChartData>({
     onDataUpdate,
     y,
     height = 30,
+    setIsTaskBarDragging,
 }: TaskBarProps<T>) => {
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState<"start" | "end" | null>(null);
@@ -1315,6 +1379,8 @@ const TaskBar = <T extends GanttChartData>({
     const handleMouseDown = useCallback(
         (e: React.MouseEvent) => {
             e.preventDefault();
+            e.stopPropagation();
+            setIsTaskBarDragging?.(true);
             setIsDragging(true);
             setDragStartX(e.clientX);
             setOriginalStartDate(startDate);
@@ -1322,7 +1388,7 @@ const TaskBar = <T extends GanttChartData>({
 
             setOriginalTask(task);
         },
-        [startDate, endDate, task]
+        [startDate, endDate, task, setIsTaskBarDragging]
     );
 
     const handleMouseMove = useCallback(
@@ -1366,7 +1432,8 @@ const TaskBar = <T extends GanttChartData>({
         setOriginalEndDate(null);
 
         setOriginalTask(null);
-    }, [originalTask, isDragging, onDataUpdate, task]);
+        setIsTaskBarDragging?.(false);
+    }, [originalTask, isDragging, onDataUpdate, task, setIsTaskBarDragging]);
 
     const handleResizeStart = useCallback(
         (e: React.MouseEvent, type: "start" | "end") => {
@@ -1454,6 +1521,15 @@ const TaskBar = <T extends GanttChartData>({
             };
         }
     }, [isResizing, handleResizeMove, handleResizeEnd]);
+
+    useEffect(() => {
+        if (isDragging) {
+            document.body.style.userSelect = 'none';
+            return () => {
+                document.body.style.userSelect = '';
+            };
+        }
+    }, [isDragging]);
 
     return (
         <g
